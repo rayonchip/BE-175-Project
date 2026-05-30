@@ -40,12 +40,15 @@ def train_decision_tree(X_train, y_train):
 
 def evaluate_model(name, model, X_eval, y_test):
     y_pred = model.predict(X_eval)
+    tn, fp, fn, tp = confusion_matrix(y_test, y_pred).ravel()
+    specificity = tn / (tn + fp) if (tn + fp) > 0 else 0.0
     return {
-        "Model":     name,
-        "Accuracy":  round(accuracy_score(y_test, y_pred), 4),
-        "Precision": round(precision_score(y_test, y_pred), 4),
-        "Recall":    round(recall_score(y_test, y_pred), 4),
-        "F1 Score":  round(f1_score(y_test, y_pred), 4),
+        "Model":       name,
+        "Accuracy":    round(accuracy_score(y_test, y_pred), 4),
+        "Precision":   round(precision_score(y_test, y_pred), 4),
+        "Recall":      round(recall_score(y_test, y_pred), 4),
+        "Specificity": round(specificity, 4),
+        "F1 Score":    round(f1_score(y_test, y_pred), 4),
     }
 
 

@@ -208,7 +208,7 @@ class TestTrainDecisionTree:
 # ---------------------------------------------------------------------------
 
 class TestEvaluateModel:
-    EXPECTED_KEYS = {"Model", "Accuracy", "Precision", "Recall", "F1 Score"}
+    EXPECTED_KEYS = {"Model", "Accuracy", "Precision", "Recall", "Specificity", "F1 Score"}
 
     def _fitted_lr(self, tiny_data):
         X, y = tiny_data
@@ -234,7 +234,7 @@ class TestEvaluateModel:
     def test_metrics_between_0_and_1(self, tiny_data):
         model, X_eval, y = self._fitted_lr(tiny_data)
         result = evaluate_model("LR", model, X_eval, y)
-        for key in ("Accuracy", "Precision", "Recall", "F1 Score"):
+        for key in ("Accuracy", "Precision", "Recall", "Specificity", "F1 Score"):
             assert 0.0 <= result[key] <= 1.0, f"{key} out of range"
 
     def test_perfect_predictions_give_all_ones(self):
@@ -243,8 +243,20 @@ class TestEvaluateModel:
         y = pd.Series([0, 1, 0, 1])
         model = train_decision_tree(X, y)
         result = evaluate_model("DT", model, X, y)
-        for key in ("Accuracy", "Precision", "Recall", "F1 Score"):
+        for key in ("Accuracy", "Precision", "Recall", "Specificity", "F1 Score"):
             assert result[key] == pytest.approx(1.0), f"{key} should be 1.0"
+
+    def test_specificity_no_false_positives(self):
+        """If no negatives are misclassified, specificity must be 1.0."""
+        X = pd.DataFrame({"a": [0.0, 0.0, 1.0, 1.0]})
+        y_true = pd.Series([0, 0, 1, 1])
+        y_pred = pd.Series([0, 0, 1, 0])  # one false negative, zero false positives
+        model = train_decision_tree(X, y_true)
+        # Override predict to return controlled output
+        import unittest.mock as mock
+        with mock.patch.object(model, "predict", return_value=np.array(y_pred)):
+            result = evaluate_model("DT", model, X, y_true)
+        assert result["Specificity"] == pytest.approx(1.0)
 
 
 # ---------------------------------------------------------------------------

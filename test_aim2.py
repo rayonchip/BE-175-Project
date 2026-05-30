@@ -21,12 +21,14 @@ from aim2_analysis import (
     plot_feature_importance,
     run_sensitivity_analysis,
     plot_sensitivity,
+    plot_regularization_path,
 )
 
 DATA_PATH = "Training Data/ckd_cleaned.csv"
 CV_METRIC_KEYS = {
     "Model",
     "mean_accuracy", "std_accuracy",
+    "mean_train_accuracy", "std_train_accuracy",
     "mean_precision", "std_precision",
     "mean_recall", "std_recall",
     "mean_f1", "std_f1",
@@ -138,6 +140,19 @@ class TestCrossValidateModel:
         result_5 = cross_validate_model("DT", trained_dt, full_X, full_y, cv=5)
         assert isinstance(result_3, dict)
         assert isinstance(result_5, dict)
+
+    def test_train_accuracy_in_range(self, trained_dt, full_X, full_y):
+        result = cross_validate_model("DT", trained_dt, full_X, full_y)
+        assert 0.0 <= result["mean_train_accuracy"] <= 1.0
+
+    def test_train_std_nonnegative(self, trained_dt, full_X, full_y):
+        result = cross_validate_model("DT", trained_dt, full_X, full_y)
+        assert result["std_train_accuracy"] >= 0.0
+
+    def test_train_accuracy_gte_cv_accuracy(self, trained_dt, full_X, full_y):
+        """Training accuracy should be >= CV accuracy — fits on full fold, tests on held-out."""
+        result = cross_validate_model("DT", trained_dt, full_X, full_y)
+        assert result["mean_train_accuracy"] >= result["mean_accuracy"]
 
 
 # ---------------------------------------------------------------------------
@@ -357,3 +372,33 @@ class TestPlotSensitivity:
         out = str(tmp_path / "sensitivity.png")
         plot_sensitivity(sens, title="DT Sensitivity", save_path=out)
         assert os.path.getsize(out) > 0
+
+
+# ---------------------------------------------------------------------------
+# plot_regularization_path
+# ---------------------------------------------------------------------------
+
+class TestPlotRegularizationPath:
+    def test_output_file_created(self, split, scaled, tmp_path):
+        X_train_scaled, X_test_scaled, _ = scaled
+        _, _, y_train, y_test = split
+        out = str(tmp_path / "reg_path.png")
+        plot_regularization_path(X_train_scaled, y_train, X_test_scaled, y_test, save_path=out)
+        assert os.path.isfile(out)
+
+    def test_output_file_nonzero_size(self, split, scaled, tmp_path):
+        X_train_scaled, X_test_scaled, _ = scaled
+        _, _, y_train, y_test = split
+        out = str(tmp_path / "reg_path.png")
+        plot_regularization_path(X_train_scaled, y_train, X_test_scaled, y_test, save_path=out)
+        assert os.path.getsize(out) > 0
+
+    def test_accepts_custom_C_values(self, split, scaled, tmp_path):
+        X_train_scaled, X_test_scaled, _ = scaled
+        _, _, y_train, y_test = split
+        out = str(tmp_path / "reg_path_custom.png")
+        plot_regularization_path(
+            X_train_scaled, y_train, X_test_scaled, y_test,
+            C_values=[0.001, 0.1, 10], save_path=out
+        )
+        assert os.path.isfile(out)

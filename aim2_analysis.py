@@ -16,17 +16,19 @@ def cross_validate_model(name, model, X, y, cv=5):
         "recall":    make_scorer(recall_score),
         "f1":        make_scorer(f1_score),
     }
-    scores = cross_validate(model, X, y, cv=cv, scoring=scoring)
+    scores = cross_validate(model, X, y, cv=cv, scoring=scoring, return_train_score=True)
     return {
-        "Model":          name,
-        "mean_accuracy":  round(scores["test_accuracy"].mean(),  4),
-        "std_accuracy":   round(scores["test_accuracy"].std(),   4),
-        "mean_precision": round(scores["test_precision"].mean(), 4),
-        "std_precision":  round(scores["test_precision"].std(),  4),
-        "mean_recall":    round(scores["test_recall"].mean(),    4),
-        "std_recall":     round(scores["test_recall"].std(),     4),
-        "mean_f1":        round(scores["test_f1"].mean(),        4),
-        "std_f1":         round(scores["test_f1"].std(),         4),
+        "Model":               name,
+        "mean_train_accuracy": round(scores["train_accuracy"].mean(), 4),
+        "std_train_accuracy":  round(scores["train_accuracy"].std(),  4),
+        "mean_accuracy":       round(scores["test_accuracy"].mean(),  4),
+        "std_accuracy":        round(scores["test_accuracy"].std(),   4),
+        "mean_precision":      round(scores["test_precision"].mean(), 4),
+        "std_precision":       round(scores["test_precision"].std(),  4),
+        "mean_recall":         round(scores["test_recall"].mean(),    4),
+        "std_recall":          round(scores["test_recall"].std(),     4),
+        "mean_f1":             round(scores["test_f1"].mean(),        4),
+        "std_f1":              round(scores["test_f1"].std(),         4),
     }
 
 
@@ -109,6 +111,33 @@ def plot_sensitivity(sensitivity_df, title, save_path="sensitivity.png"):
     ax.set_title(title)
     ax.axhline(0, color="black", linewidth=0.8)
     ax.legend()
+    plt.tight_layout()
+    plt.savefig(save_path, dpi=150)
+    plt.close(fig)
+
+
+def plot_regularization_path(X_train_scaled, y_train, X_test_scaled, y_test,
+                              C_values=None, save_path="regularization_path.png"):
+    if C_values is None:
+        C_values = [0.001, 0.01, 0.1, 1, 10, 100, 1000]
+
+    train_accs, test_accs, test_recalls = [], [], []
+    for C in C_values:
+        model = LogisticRegression(C=C, max_iter=1000)
+        model.fit(X_train_scaled, y_train)
+        train_accs.append(accuracy_score(y_train, model.predict(X_train_scaled)))
+        test_accs.append(accuracy_score(y_test,  model.predict(X_test_scaled)))
+        test_recalls.append(recall_score(y_test, model.predict(X_test_scaled)))
+
+    fig, ax = plt.subplots(figsize=(8, 5))
+    ax.semilogx(C_values, train_accs,   "o-", label="Train accuracy")
+    ax.semilogx(C_values, test_accs,    "s-", label="CV/test accuracy")
+    ax.semilogx(C_values, test_recalls, "^-", label="Test recall (sensitivity)")
+    ax.set_xlabel("C  (higher = less regularization)")
+    ax.set_ylabel("Score")
+    ax.set_title("Regularization Path — Logistic Regression")
+    ax.legend()
+    ax.grid(True, which="both", linestyle="--", alpha=0.5)
     plt.tight_layout()
     plt.savefig(save_path, dpi=150)
     plt.close(fig)
