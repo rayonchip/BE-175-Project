@@ -1,0 +1,59 @@
+﻿Project Proposal BE 175
+
+
+Group Members: Justin Vo, Dominic Decking, Robert Maple, Raymond Huang
+Chronic Kidney Disease (CKD) is a major global health issue that often develops 
+without noticeable early symptoms, making early detection difficult. Early diagnosis 
+is critical for preventing irreversible kidney damage and improving patient outcomes. 
+This project is important from a bioengineering perspective because it applies computational 
+methods to physiological and biochemical data, such as blood pressure, glucose levels, and creatinine, 
+to support disease detection. Identifying patterns in these variables can contribute to the development
+of data-driven diagnostic tools, which are increasingly important in modern healthcare. The main goal 
+of this project is to study how different biomarkers can be used to detect CKD.
+
+The goal of this project is to investigate how accurately clinical variables can be used to predict CKD 
+and to determine which biomarkers most strongly influence and stabilize these predictions. In particular, 
+we aim to understand how physiological features contribute to disease classification and how sensitive 
+model outputs are to changes in these inputs.
+
+This project falls under the second category, where we select a dataset and perform a novel computational
+analysis. We will use a publicly available CKD dataset (UCI Machine Learning Repository) and apply 
+classification models, feature importance analysis, and sensitivity testing. While similar datasets 
+have been used for prediction tasks, our approach focuses not only on prediction accuracy but also on 
+interpretability and robustness, allowing us to better understand how different physiological variables 
+contribute to disease classification.
+
+Our approach begins with data preprocessing, including handling missing values, encoding categorical 
+variables, and normalizing features. The dataset contains mixed data types and incomplete entries, 
+requiring careful preprocessing that reflects real-world clinical data challenges. We will then implement 
+classification models such as logistic regression and decision trees to predict the presence of CKD. 
+Model performance will be evaluated using metrics such as accuracy and precision. Afterward, we will 
+analyze feature importance to identify the most influential biomarkers. We will perform sensitivity 
+analysis by systematically varying input variables and observing how predictions change. This step is 
+important for assessing model robustness and understanding how small changes in patient data affect 
+outcomes.
+
+The project can be finished within one month due to the availability of a dataset and a clear workflow. 
+In week one, we will focus on data cleaning and understanding our data. Week two will involve implementing 
+and testing classification models. Week three will focus on feature importance and seeing how much the 
+output changes when we slightly change the input. Week four will be dedicated to compiling results and 
+preparing the final report and presentation. Since no additional data collection is required and tools 
+are readily available, the timeline is realistic.
+
+The project has a moderate level of difficulty. It involves data preprocessing, statistical modeling, 
+and computational analysis. Comparing multiple models requires both coding and analytical reasoning, 
+while sensitivity analysis adds complexity. However, the use of established Python libraries makes the 
+project manageable.
+
+Expected outcomes include identifying key physiological indicators of CKD, comparing the performance of
+ different classification models, and evaluating how sensitive predictions are to changes in input 
+ variables. Overall, this project demonstrates how data-driven approaches can support medical 
+ decision-making and improve understanding of disease prediction.
+
+The work will be divided among four team members. One member will clean the data by handling 
+missing values, converting data types, and preparing it for analysis. Another member will build and run 
+classification models, such as logistic regression and decision trees. A third member will evaluate the 
+models using metrics like accuracy and create graphs to visualize the results. The fourth member will 
+perform sensitivity analysis by changing input variables and observing how the predictions change, 
+then combine all results together. All members will work together on writing the final report and 
+preparing the presentation.

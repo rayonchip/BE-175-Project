@@ -1,0 +1,102 @@
+TDD Cycle Summary — Aim 1 Classification
+==========================================
+
+Overview
+--------
+Applied Test-Driven Development to the CKD (Chronic Kidney Disease) classification
+script (aim1_classification.py). The original script was a flat, module-level program
+with no importable functions, making it untestable. The TDD cycle forced a refactor
+into a clean, function-based API before any tests could pass.
+
+
+Cycle Phases
+------------
+
+1. RED — Write Failing Tests (test_aim1.py)
+   Tests were written first, defining the expected API before the functions existed.
+   Running the suite immediately produced an ImportError:
+     "cannot import name 'load_data' from 'aim1_classification'"
+   This confirmed the red phase: 0 tests collected, 1 import error.
+
+2. REFACTOR — Restructure Source to Satisfy the API
+   aim1_classification.py was rewritten to expose seven named functions:
+     - load_data(path)               → (X, y)
+     - split_data(X, y, ...)         → (X_train, X_test, y_train, y_test)
+     - scale_features(X_train, X_test) → (X_train_scaled, X_test_scaled, scaler)
+     - train_logistic_regression(X_scaled, y) → fitted LogisticRegression
+     - train_decision_tree(X, y)     → fitted DecisionTreeClassifier
+     - evaluate_model(name, model, X_eval, y_test) → metrics dict
+     - plot_confusion_matrices(models, y_test, save_path) → saves PNG
+   A main() function preserves the original CLI behavior, guarded by
+   if __name__ == "__main__", so the script still runs directly.
+
+3. GREEN — All Tests Pass
+   34 tests across 8 test classes passed with no warnings.
+   Runtime: 2.24 seconds.
+
+
+Test Classes and Rationale
+--------------------------
+TestLoadData (7 tests)
+  Verifies the dataset loads with correct shape (400 rows, 24 features),
+  expected column names, no class leakage into X, binary labels, no missing values.
+
+TestSplitData (4 tests)
+  Checks the 80/20 split ratio, no index overlap between train and test sets,
+  and that stratification preserves the CKD/notCKD class balance within 5%.
+
+TestScaleFeatures (5 tests)
+  Confirms the StandardScaler is fit only on training data (mean ≈ 0, std ≈ 1
+  on train; test set mean differs from 0, proving no data leakage).
+  Output shapes match input shapes.
+
+TestTrainLogisticRegression (3 tests)
+  Checks return type, fitted state (coef_ attribute present), and that
+  predictions are binary (0 or 1 only).
+
+TestTrainDecisionTree (4 tests)
+  Checks return type, fitted state (feature_importances_ present),
+  that importances sum to 1.0, and binary predictions.
+
+TestEvaluateModel (5 tests)
+  Validates the returned dict has exactly the expected keys, the model name
+  is stored, all metric values are in [0, 1], and a perfect classifier
+  scores 1.0 on all four metrics.
+
+TestIntegration (4 tests)
+  End-to-end tests on the real CKD dataset. Both models must achieve
+  ≥ 90% accuracy and ≥ 90% recall. Recall is tested separately because
+  false negatives (missed CKD diagnoses) carry higher clinical cost.
+
+TestPlotConfusionMatrices (2 tests)
+  Confirms the output PNG is created and has non-zero file size.
+  Uses pytest's tmp_path fixture to avoid polluting the project directory.
+
+
+Final Results
+-------------
+Models on 80-patient held-out test set (stratified, random_state=42):
+
+  Model                  Accuracy  Precision  Recall  F1 Score
+  Logistic Regression    0.975     1.000      0.96    0.9796
+  Decision Tree          0.975     1.000      0.96    0.9796
+
+Both models: 2 false negatives, 0 false positives.
+
+
+Key Design Decisions
+--------------------
+- Feature scaling applied to logistic regression only; decision tree uses raw
+  features (tree-based models are scale-invariant).
+- Scaler is fit on training data exclusively — test data is only transformed,
+  preventing data leakage.
+- StandardScaler chosen over MinMaxScaler because LR with lbfgs solver
+  converges reliably when features have zero mean and unit variance.
+- No hyperparameter tuning or cross-validation — bare bones Aim 1 scope.
+
+
+Files
+-----
+  aim1_classification.py   — refactored source with 7 public functions + main()
+  test_aim1.py             — 34 pytest tests across 8 test classes
+  confusion_matrices.png   — side-by-side confusion matrix plot (saved on run)
