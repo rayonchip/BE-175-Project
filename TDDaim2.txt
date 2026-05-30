@@ -1,0 +1,155 @@
+TDD Cycle Summary — Aim 2 Analysis
+=====================================
+
+Overview
+--------
+Extended the CKD classification project with the four components excluded from
+Aim 1: cross-validation, hyperparameter tuning, feature importance analysis, and
+sensitivity analysis. All logic lives in aim2_analysis.py and imports the
+reusable functions from aim1_classification.py. Tests were written first in
+test_aim2.py before any implementation existed.
+
+
+Cycle Phases
+------------
+
+1. RED — Write Failing Tests (test_aim2.py)
+   39 tests written across 8 test classes defining the full expected API.
+   Running the suite immediately produced:
+     "ModuleNotFoundError: No module named 'aim2_analysis'"
+   This confirmed the red phase: 0 tests collected, 1 import error.
+
+2. IMPLEMENT — Write aim2_analysis.py
+   Seven functions were implemented to satisfy the test contracts:
+     - cross_validate_model(name, model, X, y, cv=5)
+         Runs k-fold cross-validation and returns mean/std of accuracy,
+         precision, recall, and F1.
+     - tune_logistic_regression(X_train_scaled, y_train)
+         GridSearchCV over C = [0.01, 0.1, 1, 10, 100]; returns best
+         fitted model and best params dict.
+     - tune_decision_tree(X_train, y_train)
+         GridSearchCV over max_depth and min_samples_split; returns best
+         fitted model and best params dict.
+     - get_feature_importance(model, feature_names)
+         Returns a DataFrame sorted descending by importance. Uses absolute
+         coefficients for LR and feature_importances_ for DT.
+     - plot_feature_importance(importance_df, title, save_path)
+         Horizontal bar chart saved as PNG.
+     - run_sensitivity_analysis(model, X_ref, feature_names, scaler, step)
+         Perturbs each feature ±step from a reference point (median of test
+         set) and records the change in predicted P(CKD).
+     - plot_sensitivity(sensitivity_df, title, save_path)
+         Grouped bar chart of delta_plus / delta_minus for the top 15
+         features by maximum absolute delta.
+
+3. FIRST RUN — 30/39 Passing
+   9 failures in TestRunSensitivityAnalysis and TestPlotSensitivity.
+   Root cause: X_ref is X_test.median(), a 1D pandas Series. Calling
+   ref.std() on a 1D Series returns a single scalar float, not per-feature
+   stds. The line std.iloc[i] then crashed with:
+     "AttributeError: 'numpy.float64' object has no attribute 'iloc'"
+
+4. FIX — Refactor run_sensitivity_analysis
+   Two issues resolved:
+   a) Perturbation step: dropped std-based perturbation (requires the full
+      dataset, not a single reference row). Replaced with a fixed step
+      parameter (default 1.0) applied uniformly across all features.
+   b) Prediction input type: models fitted on DataFrames (DT) expect
+      DataFrames; models fitted on numpy arrays (LR) expect numpy. Using a
+      single type caused sklearn feature-name warnings.
+      Fix: always build a named DataFrame for the perturbation row, then
+      pass it directly for DT (no scaler), or transform through the scaler
+      first for LR, which strips feature names and returns numpy.
+
+5. GREEN — 39/39 Passing, Zero Warnings
+   Runtime: 3.49 seconds.
+
+
+Test Classes and Rationale
+--------------------------
+TestCrossValidateModel (8 tests)
+  Checks return type, exact key set, model name stored, all mean metrics
+  in [0, 1], all std metrics >= 0, both LR and DT achieve >= 90% mean CV
+  accuracy, and that the cv parameter is respected for both 3 and 5 folds.
+
+TestTuneLogisticRegression (6 tests)
+  Checks tuple return, correct model type, fitted state (coef_ present),
+  best_params is a dict containing 'C', and tuned model achieves >= 90%
+  accuracy on the held-out test set.
+
+TestTuneDecisionTree (6 tests)
+  Same structure as LR tuning. Verifies 'max_depth' in best_params and
+  >= 90% accuracy on the held-out test set.
+
+TestGetFeatureImportance (8 tests)
+  Verifies DataFrame return with 'feature' and 'importance' columns, correct
+  row count, all importances >= 0, sorted descending, all feature names
+  preserved, DT importances sum to 1.0, and that the function handles both
+  model types without branching in the test.
+
+TestPlotFeatureImportance (2 tests)
+  File existence and non-zero size, using pytest's tmp_path fixture to
+  avoid polluting the project directory.
+
+TestRunSensitivityAnalysis (7 tests)
+  Verifies DataFrame return, correct columns ('feature', 'delta_plus',
+  'delta_minus'), one row per feature, all feature names present, float
+  dtype on delta columns, deltas bounded in [-1, 1], and that the scaler
+  path works correctly for LR.
+
+TestPlotSensitivity (2 tests)
+  File existence and non-zero size via tmp_path.
+
+
+Final Results (from main())
+----------------------------
+Cross-Validation (5-fold):
+  Model                  Mean Accuracy   Std Accuracy
+  Logistic Regression    0.9925          0.0061
+  Decision Tree          0.9725          0.0122
+
+Hyperparameter Tuning:
+  Best LR params:  C = 1
+  Best DT params:  max_depth = 3, min_samples_split = 2
+
+  Tuned model test-set performance:
+    LR: Accuracy 0.975, Precision 1.0, Recall 0.96, F1 0.9796
+    DT: Accuracy 0.975, Precision 0.98, Recall 0.98, F1 0.98
+
+Feature Importance (top 5, both models agree on top 3):
+  Rank  LR Feature   DT Feature
+  1     hemo         hemo
+  2     sg           sg
+  3     pcv          rbcc
+  4     dm           htn
+  5     rbcc         sc
+
+Sensitivity Analysis — top movers (Δ P(CKD) per ±1 unit):
+  LR: sg (±0.50), dm (±0.40), appet (±0.39), htn (±0.36), pe (±0.36)
+  DT: rbcc (−1.0 on +1 step), hemo (−0.99 on +1 step)
+  Interpretation: LR is continuously sensitive to multiple biomarkers;
+  DT is step-sensitive (binary threshold crossings at specific values).
+
+
+Key Design Decisions
+--------------------
+- Fixed perturbation step (default 1.0) instead of std-based: keeps the
+  function self-contained without requiring the full dataset.
+- predict_proba used over predict: gives a continuous delta in [-1, 1]
+  rather than a binary flip, making LR sensitivity interpretable.
+- Sensitivity reference point is the median of the test set: a stable,
+  clinically representative baseline.
+- GridSearchCV uses 5-fold CV internally: consistent with cross_validate_model
+  so tuning and evaluation use the same fold strategy.
+- get_feature_importance uses abs(coef_) for LR: raw coefficients can be
+  negative (direction matters for prediction but not for "influence size").
+
+
+Files
+-----
+  aim2_analysis.py    — 7 public functions + main()
+  test_aim2.py        — 39 pytest tests across 8 test classes
+  lr_feature_importance.png  — LR feature importance bar chart
+  dt_feature_importance.png  — DT feature importance bar chart
+  lr_sensitivity.png         — LR sensitivity bar chart (top 15 features)
+  dt_sensitivity.png         — DT sensitivity bar chart (top 15 features)
