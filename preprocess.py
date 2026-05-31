@@ -15,9 +15,9 @@ Responsibilities
 
 Usage
 -----
-    python Code/preprocess.py
+    python preprocess.py
 
-Run from the project root (CKD_Project/).
+Run from the project root (BE-175-Project/).
 
 Author: Justin Vo / Group BE 175
 """
@@ -30,10 +30,9 @@ import pandas as pd
 # ---------------------------------------------------------------------------
 # Paths
 # ---------------------------------------------------------------------------
-ROOT = pathlib.Path(__file__).resolve().parent.parent          # CKD_Project/
-RAW_DIR = ROOT / "Data" / "raw"
-PROCESSED_DIR = ROOT / "Data" / "processed"
-PROCESSED_DIR.mkdir(parents=True, exist_ok=True)
+ROOT = pathlib.Path(__file__).resolve().parent                 # BE-175-Project/
+RAW_DIR = ROOT / "Training Data"
+PROCESSED_DIR = ROOT / "Training Data"
 
 ARFF_FILE = RAW_DIR / "chronic_kidney_disease.arff"
 CLEANED_CSV = PROCESSED_DIR / "ckd_cleaned.csv"
@@ -111,6 +110,17 @@ def parse_arff(filepath: pathlib.Path) -> pd.DataFrame:
 # Step 2 – Clean raw string values
 # ---------------------------------------------------------------------------
 
+# ---------------------------------------------------------------------------
+# Column rename map (raw ARFF names → names expected by the models)
+# ---------------------------------------------------------------------------
+COLUMN_RENAMES = {
+    "wc":             "wbcc",   # white cell count → white blood cell count
+    "rc":             "rbcc",   # red cell count   → red blood cell count
+    "classification": "class",  # target label
+}
+
+
+# ---------------------------------------------------------------------------
 # Columns that should hold only 'yes' / 'no'
 YES_NO_COLS = ["htn", "dm", "cad", "pe", "ane"]
 
@@ -224,7 +234,7 @@ def impute_missing(df: pd.DataFrame) -> pd.DataFrame:
         if n_missing == 0:
             continue
 
-        if df[col].dtype in [np.float64, np.int64, float, int]:
+        if pd.api.types.is_numeric_dtype(df[col]):
             fill_val = df[col].median()
             strategy = "median"
         else:
@@ -348,6 +358,11 @@ def run_pipeline() -> pd.DataFrame:
     print(f"\n[1/4] Parsing ARFF: {ARFF_FILE}")
     df_raw = parse_arff(ARFF_FILE)
     print(f"      Shape: {df_raw.shape}  ({df_raw.shape[0]} samples, {df_raw.shape[1]} features)")
+
+    # Rename raw column names to match model expectations; drop id if present
+    df_raw = df_raw.rename(columns=COLUMN_RENAMES)
+    if "id" in df_raw.columns:
+        df_raw = df_raw.drop(columns=["id"])
 
     # 2. Clean
     print("\n[2/4] Cleaning string values …")
