@@ -6,7 +6,7 @@ from sklearn.tree import DecisionTreeClassifier
 from sklearn.metrics import make_scorer, accuracy_score, precision_score, recall_score, f1_score
 import matplotlib.pyplot as plt
 
-from aim1_classification import load_data, split_data, scale_features, evaluate_model
+from aim1_classification import load_data, split_data, scale_features, evaluate_model, FEATURE_NAMES
 
 
 def cross_validate_model(name, model, X, y, cv=5):
@@ -36,7 +36,7 @@ def cross_validate_model(name, model, X, y, cv=5):
 def tune_logistic_regression(X_train_scaled, y_train):
     param_grid = {"C": [0.01, 0.1, 1, 10, 100]}
     grid = GridSearchCV(
-        LogisticRegression(max_iter=1000), param_grid, cv=5, scoring="accuracy"
+        LogisticRegression(max_iter=1000), param_grid, cv=5, scoring="recall"
     )
     grid.fit(X_train_scaled, y_train)
     return grid.best_estimator_, grid.best_params_
@@ -48,7 +48,7 @@ def tune_decision_tree(X_train, y_train):
         "min_samples_split": [2, 5, 10],
     }
     grid = GridSearchCV(
-        DecisionTreeClassifier(random_state=42), param_grid, cv=5, scoring="accuracy"
+        DecisionTreeClassifier(random_state=42), param_grid, cv=5, scoring="recall"
     )
     grid.fit(X_train, y_train)
     return grid.best_estimator_, grid.best_params_
@@ -146,12 +146,6 @@ def plot_regularization_path(X_train_scaled, y_train, X_test_scaled, y_test,
 
 def main():
     DATA_PATH = "Training Data/ckd_cleaned.csv"
-    FEATURE_NAMES = [
-        "age", "bp", "sg", "al", "su", "rbc", "pc", "pcc", "ba",
-        "bgr", "bu", "sc", "sod", "pot", "hemo", "pcv", "wbcc", "rbcc",
-        "htn", "dm", "cad", "appet", "pe", "ane",
-    ]
-
     X, y = load_data(DATA_PATH)
     X_train, X_test, y_train, y_test = split_data(X, y)
     X_train_scaled, X_test_scaled, scaler = scale_features(X_train, X_test)

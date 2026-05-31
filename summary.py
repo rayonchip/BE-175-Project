@@ -3,13 +3,13 @@ summary.py — cross-aim synthesis answering the three project questions.
 Run: python summary.py
 """
 import numpy as np
-import pandas as pd
+import pandas as pdgit add aim1_classification.py aim2_analysis.py aim3_plsr.py test_aim3.py summary.py
 import matplotlib.pyplot as plt
 from functools import reduce
 
 from aim1_classification import (
     load_data, split_data, scale_features, evaluate_model,
-    train_logistic_regression, train_decision_tree,
+    train_logistic_regression, train_decision_tree, FEATURE_NAMES,
 )
 from aim2_analysis import (
     cross_validate_model, tune_logistic_regression, tune_decision_tree,
@@ -21,11 +21,6 @@ from aim3_plsr import (
 )
 
 DATA_PATH = "Training Data/ckd_cleaned.csv"
-FEATURE_NAMES = [
-    "age", "bp", "sg", "al", "su", "rbc", "pc", "pcc", "ba",
-    "bgr", "bu", "sc", "sod", "pot", "hemo", "pcv", "wbcc", "rbcc",
-    "htn", "dm", "cad", "appet", "pe", "ane",
-]
 
 
 def build_consensus(lr_imp, dt_imp, vip_df, bvip_df, sens_df):
@@ -131,7 +126,7 @@ def main():
     vip_df  = compute_vip(model, FEATURE_NAMES)
     bvip_df = bootstrap_vip(X_train_scaled, y_train, n_components=n_comp,
                             feature_names=FEATURE_NAMES, n_bootstrap=200)
-    sens_df = plsr_sensitivity(model, X_train_scaled.mean(axis=0), FEATURE_NAMES)
+    sens_df = plsr_sensitivity(model, X_test_scaled.mean(axis=0), FEATURE_NAMES)
 
     # Consensus table
     consensus = build_consensus(lr_imp, dt_imp, vip_df, bvip_df, sens_df)

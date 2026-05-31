@@ -5,7 +5,7 @@ from sklearn.cross_decomposition import PLSRegression
 from sklearn.linear_model import Ridge
 from sklearn.model_selection import cross_val_score
 
-from aim1_classification import load_data, split_data, scale_features
+from aim1_classification import load_data, split_data, scale_features, FEATURE_NAMES
 
 
 def fit_plsr(X, y, n_components):
@@ -199,7 +199,7 @@ def main():
     print(f"\nOptimal number of PLSR components: {n}")
 
     model = fit_plsr(X_train_scaled, y_train, n_components=n)
-    feature_names = list(X.columns)
+    feature_names = FEATURE_NAMES
 
     vip = compute_vip(model, feature_names)
     print("\nTop 5 VIP scores:")
@@ -225,7 +225,7 @@ def main():
     plot_vip(vip, "vip_scores.png")
     plot_bootstrap_stability(bvip, "bootstrap_stability.png")
 
-    X_ref = X_train_scaled.mean(axis=0)
+    X_ref = X_test_scaled.mean(axis=0)
     sens = plsr_sensitivity(model, X_ref, feature_names)
     sens["max_delta"] = sens[["delta_plus", "delta_minus"]].abs().max(axis=1)
     print("\nPLSR perturbation sensitivity (top 10 by max |Δ prediction|):")

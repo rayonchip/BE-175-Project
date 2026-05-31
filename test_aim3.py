@@ -8,7 +8,7 @@ import pandas as pd
 import pytest
 from sklearn.cross_decomposition import PLSRegression
 
-from aim1_classification import load_data, split_data, scale_features
+from aim1_classification import load_data, split_data, scale_features, FEATURE_NAMES
 from aim3_plsr import (
     fit_plsr, select_n_components, compute_vip,
     bootstrap_vip, condition_number, bootstrap_coef_ci,
@@ -17,11 +17,6 @@ from aim3_plsr import (
 )
 
 DATA_PATH = "Training Data/ckd_cleaned.csv"
-FEATURE_NAMES = [
-    "age", "bp", "sg", "al", "su", "rbc", "pc", "pcc", "ba",
-    "bgr", "bu", "sc", "sod", "pot", "hemo", "pcv", "wbcc", "rbcc",
-    "htn", "dm", "cad", "appet", "pe", "ane",
-]
 
 
 # ---------------------------------------------------------------------------

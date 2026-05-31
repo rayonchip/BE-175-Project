@@ -7,6 +7,12 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix
 import matplotlib.pyplot as plt
 
+FEATURE_NAMES = [
+    "age", "bp", "sg", "al", "su", "rbc", "pc", "pcc", "ba",
+    "bgr", "bu", "sc", "sod", "pot", "hemo", "pcv", "wbcc", "rbcc",
+    "htn", "dm", "cad", "appet", "pe", "ane",
+]
+
 
 def load_data(path):
     df = pd.read_csv(path)
