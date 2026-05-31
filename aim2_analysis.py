@@ -1,6 +1,6 @@
 import pandas as pd
 import numpy as np
-from sklearn.model_selection import cross_validate, GridSearchCV
+from sklearn.model_selection import cross_validate, GridSearchCV, StratifiedKFold
 from sklearn.linear_model import LogisticRegression
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.metrics import make_scorer, accuracy_score, precision_score, recall_score, f1_score
@@ -16,7 +16,8 @@ def cross_validate_model(name, model, X, y, cv=5):
         "recall":    make_scorer(recall_score),
         "f1":        make_scorer(f1_score),
     }
-    scores = cross_validate(model, X, y, cv=cv, scoring=scoring, return_train_score=True)
+    scores = cross_validate(model, X, y, cv=StratifiedKFold(n_splits=cv),
+                            scoring=scoring, return_train_score=True)
     return {
         "Model":               name,
         "mean_train_accuracy": round(scores["train_accuracy"].mean(), 4),
@@ -208,6 +209,10 @@ def main():
     plot_sensitivity(lr_sens.drop(columns="max_abs"), "LR Sensitivity", "lr_sensitivity.png")
     plot_sensitivity(dt_sens.drop(columns="max_abs"), "DT Sensitivity", "dt_sensitivity.png")
     print("Saved: lr_sensitivity.png, dt_sensitivity.png")
+
+    # --- Regularization Path ---
+    plot_regularization_path(X_train_scaled, y_train, X_test_scaled, y_test)
+    print("Saved: regularization_path.png")
 
 
 if __name__ == "__main__":

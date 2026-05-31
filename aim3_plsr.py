@@ -233,7 +233,6 @@ def main():
     plot_plsr_sensitivity(sens.drop(columns="max_delta"), "plsr_sensitivity.png")
     print("Saved: vip_scores.png, bootstrap_stability.png, plsr_sensitivity.png")
 
-    fit_ridge(X_train_scaled, y_train)
     ridge_ci = bootstrap_ridge_ci(X_train_scaled, y_train,
                                    feature_names=feature_names, n_bootstrap=200)
     stab = compare_stability(ci_df.drop(columns="abs_coef"), ridge_ci)
