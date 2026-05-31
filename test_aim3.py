@@ -12,6 +12,8 @@ from aim1_classification import load_data, split_data, scale_features
 from aim3_plsr import (
     fit_plsr, select_n_components, compute_vip,
     bootstrap_vip, condition_number, bootstrap_coef_ci,
+    plsr_sensitivity, fit_ridge, compare_stability,
+    plot_vip, plot_bootstrap_stability, plot_plsr_sensitivity,
 )
 
 DATA_PATH = "Training Data/ckd_cleaned.csv"
@@ -201,3 +203,82 @@ class TestBootstrapCoefCi:
 
     def test_ci_width_nonnegative(self, ci_df):
         assert (ci_df["ci_width"] >= 0).all()
+
+
+# ---------------------------------------------------------------------------
+# plsr_sensitivity
+# ---------------------------------------------------------------------------
+
+class TestPlsrSensitivity:
+    def test_returns_correct_shape(self, data):
+        X_train_scaled, y_train, _, _ = data
+        model = fit_plsr(X_train_scaled, y_train, n_components=3)
+        X_ref = X_train_scaled.mean(axis=0)
+        result = plsr_sensitivity(model, X_ref, FEATURE_NAMES)
+        assert isinstance(result, pd.DataFrame)
+        assert set(result.columns) == {"feature", "delta_plus", "delta_minus"}
+        assert len(result) == len(FEATURE_NAMES)
+
+
+# ---------------------------------------------------------------------------
+# fit_ridge / compare_stability
+# ---------------------------------------------------------------------------
+
+class TestFitRidge:
+    def test_returns_fitted_model(self, data):
+        from sklearn.linear_model import Ridge
+        X_train_scaled, y_train, _, _ = data
+        model = fit_ridge(X_train_scaled, y_train)
+        assert isinstance(model, Ridge)
+        assert hasattr(model, "coef_")
+
+
+class TestCompareStability:
+    def test_returns_correct_shape(self, data):
+        X_train_scaled, y_train, _, _ = data
+        plsr_ci = bootstrap_coef_ci(
+            X_train_scaled, y_train, n_components=3,
+            feature_names=FEATURE_NAMES, n_bootstrap=30, random_state=0,
+        )
+        ridge_ci = bootstrap_coef_ci(
+            X_train_scaled, y_train, n_components=3,
+            feature_names=FEATURE_NAMES, n_bootstrap=30, random_state=0,
+        )
+        result = compare_stability(plsr_ci, ridge_ci)
+        assert isinstance(result, pd.DataFrame)
+        assert set(result.columns) == {"feature", "plsr_ci_width", "ridge_ci_width"}
+        assert len(result) == len(FEATURE_NAMES)
+
+
+# ---------------------------------------------------------------------------
+# Plot functions
+# ---------------------------------------------------------------------------
+
+class TestPlots:
+    @pytest.fixture(scope="class")
+    def plot_inputs(self, data):
+        X_train_scaled, y_train, _, _ = data
+        model = fit_plsr(X_train_scaled, y_train, n_components=3)
+        vip = compute_vip(model, FEATURE_NAMES)
+        bvip = bootstrap_vip(X_train_scaled, y_train, n_components=3,
+                             feature_names=FEATURE_NAMES, n_bootstrap=30, random_state=0)
+        sens = plsr_sensitivity(model, X_train_scaled.mean(axis=0), FEATURE_NAMES)
+        return vip, bvip, sens
+
+    def test_plot_vip_saves_file(self, plot_inputs, tmp_path):
+        vip, _, _ = plot_inputs
+        p = tmp_path / "vip.png"
+        plot_vip(vip, str(p))
+        assert p.stat().st_size > 0
+
+    def test_plot_bootstrap_stability_saves_file(self, plot_inputs, tmp_path):
+        _, bvip, _ = plot_inputs
+        p = tmp_path / "stab.png"
+        plot_bootstrap_stability(bvip, str(p))
+        assert p.stat().st_size > 0
+
+    def test_plot_plsr_sensitivity_saves_file(self, plot_inputs, tmp_path):
+        _, _, sens = plot_inputs
+        p = tmp_path / "sens.png"
+        plot_plsr_sensitivity(sens, str(p))
+        assert p.stat().st_size > 0
