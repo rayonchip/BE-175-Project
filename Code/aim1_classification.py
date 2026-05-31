@@ -85,7 +85,8 @@ def plot_confusion_matrices(models, y_test, save_path="confusion_matrices.png"):
 
 
 def main():
-    DATA_PATH = pathlib.Path(__file__).parent.parent / "Data" / "ckd_cleaned.csv"
+    DATA_PATH   = pathlib.Path(__file__).parent.parent / "Data"    / "ckd_cleaned.csv"
+    RESULTS_DIR = pathlib.Path(__file__).parent.parent / "Results"
 
     X, y = load_data(DATA_PATH)
     X_train, X_test, y_train, y_test = split_data(X, y)
@@ -107,8 +108,8 @@ def main():
     print("\n=== Aim 1: Classification Results ===")
     print(pd.DataFrame(results).to_string(index=False))
 
-    plot_confusion_matrices(models, y_test)
-    print("\nSaved: confusion_matrices.png")
+    plot_confusion_matrices(models, y_test, RESULTS_DIR / "confusion_matrices.png")
+    print(f"\nSaved: {RESULTS_DIR / 'confusion_matrices.png'}")
 
 
 if __name__ == "__main__":

@@ -190,7 +190,8 @@ def plot_plsr_sensitivity(sens_df, save_path="plsr_sensitivity.png"):
 
 
 def main():
-    DATA_PATH = pathlib.Path(__file__).parent.parent / "Data" / "ckd_cleaned.csv"
+    DATA_PATH   = pathlib.Path(__file__).parent.parent / "Data"    / "ckd_cleaned.csv"
+    RESULTS_DIR = pathlib.Path(__file__).parent.parent / "Results"
 
     X, y = load_data(DATA_PATH)
     X_train, X_test, y_train, y_test = split_data(X, y)
@@ -223,16 +224,16 @@ def main():
               .drop(columns="abs_coef")
               .to_string(index=False))
 
-    plot_vip(vip, "vip_scores.png")
-    plot_bootstrap_stability(bvip, "bootstrap_stability.png")
+    plot_vip(vip, RESULTS_DIR / "vip_scores.png")
+    plot_bootstrap_stability(bvip, RESULTS_DIR / "bootstrap_stability.png")
 
     X_ref = X_test_scaled.mean(axis=0)
     sens = plsr_sensitivity(model, X_ref, feature_names)
     sens["max_delta"] = sens[["delta_plus", "delta_minus"]].abs().max(axis=1)
     print("\nPLSR perturbation sensitivity (top 10 by max |Δ prediction|):")
     print(sens.nlargest(10, "max_delta").drop(columns="max_delta").to_string(index=False))
-    plot_plsr_sensitivity(sens.drop(columns="max_delta"), "plsr_sensitivity.png")
-    print("Saved: vip_scores.png, bootstrap_stability.png, plsr_sensitivity.png")
+    plot_plsr_sensitivity(sens.drop(columns="max_delta"), RESULTS_DIR / "plsr_sensitivity.png")
+    print("Saved: Results/vip_scores.png, Results/bootstrap_stability.png, Results/plsr_sensitivity.png")
 
     ridge_ci = bootstrap_ridge_ci(X_train_scaled, y_train,
                                    feature_names=feature_names, n_bootstrap=200)

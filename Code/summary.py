@@ -102,6 +102,7 @@ def save_summary_figure(consensus, vip_df, bvip_df, sens_df, save_path="summary_
 
 
 def main():
+    RESULTS_DIR = pathlib.Path(__file__).parent.parent / "Results"
     X, y = load_data(DATA_PATH)
     X_train, X_test, y_train, y_test = split_data(X, y)
     X_train_scaled, X_test_scaled, scaler = scale_features(X_train, X_test)
@@ -179,8 +180,8 @@ def main():
         ["feature", "lr_rank", "dt_rank", "vip_rank", "stability", "consensus_rank"]
     ].to_string(index=False))
 
-    save_summary_figure(consensus, vip_df, bvip_df, sens_df)
-    print("\nSaved: summary_figure.png")
+    save_summary_figure(consensus, vip_df, bvip_df, sens_df, RESULTS_DIR / "summary_figure.png")
+    print(f"\nSaved: {RESULTS_DIR / 'summary_figure.png'}")
 
 
 if __name__ == "__main__":

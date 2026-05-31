@@ -146,7 +146,8 @@ def plot_regularization_path(X_train_scaled, y_train, X_test_scaled, y_test,
 
 
 def main():
-    DATA_PATH = pathlib.Path(__file__).parent.parent / "Data" / "ckd_cleaned.csv"
+    DATA_PATH   = pathlib.Path(__file__).parent.parent / "Data"    / "ckd_cleaned.csv"
+    RESULTS_DIR = pathlib.Path(__file__).parent.parent / "Results"
     X, y = load_data(DATA_PATH)
     X_train, X_test, y_train, y_test = split_data(X, y)
     X_train_scaled, X_test_scaled, scaler = scale_features(X_train, X_test)
@@ -188,8 +189,8 @@ def main():
     dt_imp = get_feature_importance(dt_tuned, FEATURE_NAMES)
     print("LR:\n", lr_imp.head())
     print("DT:\n", dt_imp.head())
-    plot_feature_importance(lr_imp, "LR Feature Importance", "lr_feature_importance.png")
-    plot_feature_importance(dt_imp, "DT Feature Importance", "dt_feature_importance.png")
+    plot_feature_importance(lr_imp, "LR Feature Importance", RESULTS_DIR / "lr_feature_importance.png")
+    plot_feature_importance(dt_imp, "DT Feature Importance", RESULTS_DIR / "dt_feature_importance.png")
     print("Saved: lr_feature_importance.png, dt_feature_importance.png")
 
     # --- Sensitivity Analysis ---
@@ -201,12 +202,13 @@ def main():
     dt_sens["max_abs"] = dt_sens[["delta_plus", "delta_minus"]].abs().max(axis=1)
     print("LR:\n", lr_sens.nlargest(5, "max_abs")[["feature", "delta_plus", "delta_minus"]])
     print("DT:\n", dt_sens.nlargest(5, "max_abs")[["feature", "delta_plus", "delta_minus"]])
-    plot_sensitivity(lr_sens.drop(columns="max_abs"), "LR Sensitivity", "lr_sensitivity.png")
-    plot_sensitivity(dt_sens.drop(columns="max_abs"), "DT Sensitivity", "dt_sensitivity.png")
+    plot_sensitivity(lr_sens.drop(columns="max_abs"), "LR Sensitivity", RESULTS_DIR / "lr_sensitivity.png")
+    plot_sensitivity(dt_sens.drop(columns="max_abs"), "DT Sensitivity", RESULTS_DIR / "dt_sensitivity.png")
     print("Saved: lr_sensitivity.png, dt_sensitivity.png")
 
     # --- Regularization Path ---
-    plot_regularization_path(X_train_scaled, y_train, X_test_scaled, y_test)
+    plot_regularization_path(X_train_scaled, y_train, X_test_scaled, y_test,
+                             save_path=RESULTS_DIR / "regularization_path.png")
     print("Saved: regularization_path.png")
 
 
