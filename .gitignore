@@ -2,3 +2,5 @@ __pycache__/
 *.png
 *.pyc
 .pytest_cache/
+*.arff
+ckd_summary.csv

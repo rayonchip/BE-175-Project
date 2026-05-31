@@ -3,7 +3,7 @@ summary.py — cross-aim synthesis answering the three project questions.
 Run: python summary.py
 """
 import numpy as np
-import pandas as pdgit add aim1_classification.py aim2_analysis.py aim3_plsr.py test_aim3.py summary.py
+import pandas as pd
 import matplotlib.pyplot as plt
 from functools import reduce
 
