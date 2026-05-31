@@ -9,7 +9,10 @@ import pytest
 from sklearn.cross_decomposition import PLSRegression
 
 from aim1_classification import load_data, split_data, scale_features
-from aim3_plsr import fit_plsr, select_n_components, compute_vip
+from aim3_plsr import (
+    fit_plsr, select_n_components, compute_vip,
+    bootstrap_vip, condition_number, bootstrap_coef_ci,
+)
 
 DATA_PATH = "Training Data/ckd_cleaned.csv"
 FEATURE_NAMES = [
@@ -111,3 +114,90 @@ class TestComputeVip:
     def test_significant_biomarkers_exist(self, vip):
         """On CKD data, at least one biomarker should score VIP > 1."""
         assert (vip["vip"] > 1.0).any()
+
+
+# ---------------------------------------------------------------------------
+# bootstrap_vip
+# ---------------------------------------------------------------------------
+
+class TestBootstrapVip:
+    @pytest.fixture(scope="class")
+    def bvip(self, data):
+        X_train_scaled, y_train, _, _ = data
+        return bootstrap_vip(
+            X_train_scaled, y_train,
+            n_components=3, feature_names=FEATURE_NAMES,
+            n_bootstrap=50, random_state=0,
+        )
+
+    def test_returns_dataframe(self, bvip):
+        assert isinstance(bvip, pd.DataFrame)
+
+    def test_has_correct_columns(self, bvip):
+        assert set(bvip.columns) == {"feature", "stability", "mean_vip"}
+
+    def test_length_equals_feature_count(self, bvip):
+        assert len(bvip) == len(FEATURE_NAMES)
+
+    def test_stability_in_range(self, bvip):
+        assert bvip["stability"].between(0.0, 1.0).all()
+
+    def test_mean_vip_nonnegative(self, bvip):
+        assert (bvip["mean_vip"] >= 0).all()
+
+    def test_top_biomarkers_stable(self, bvip):
+        """hemo and sg are the dominant CKD predictors — both should be stable."""
+        top_stable = bvip.nlargest(5, "stability")["feature"].values
+        assert "hemo" in top_stable or "sg" in top_stable
+
+
+# ---------------------------------------------------------------------------
+# condition_number
+# ---------------------------------------------------------------------------
+
+class TestConditionNumber:
+    def test_returns_float(self, data):
+        _, _, X_scaled, _ = data
+        assert isinstance(condition_number(X_scaled), float)
+
+    def test_greater_than_one(self, data):
+        _, _, X_scaled, _ = data
+        assert condition_number(X_scaled) >= 1.0
+
+    def test_ckd_features_multicollinear(self, data):
+        """Clinical features (hemo/pcv/rbcc etc.) are correlated; expect cond > 10."""
+        _, _, X_scaled, _ = data
+        assert condition_number(X_scaled) > 10.0
+
+
+# ---------------------------------------------------------------------------
+# bootstrap_coef_ci
+# ---------------------------------------------------------------------------
+
+class TestBootstrapCoefCi:
+    @pytest.fixture(scope="class")
+    def ci_df(self, data):
+        X_train_scaled, y_train, _, _ = data
+        return bootstrap_coef_ci(
+            X_train_scaled, y_train,
+            n_components=3, feature_names=FEATURE_NAMES,
+            n_bootstrap=50, ci=95, random_state=0,
+        )
+
+    def test_returns_dataframe(self, ci_df):
+        assert isinstance(ci_df, pd.DataFrame)
+
+    def test_has_correct_columns(self, ci_df):
+        assert set(ci_df.columns) == {"feature", "mean_coef", "ci_lower", "ci_upper", "ci_width"}
+
+    def test_length_equals_feature_count(self, ci_df):
+        assert len(ci_df) == len(FEATURE_NAMES)
+
+    def test_all_features_present(self, ci_df):
+        assert set(ci_df["feature"]) == set(FEATURE_NAMES)
+
+    def test_ci_lower_less_than_upper(self, ci_df):
+        assert (ci_df["ci_lower"] <= ci_df["ci_upper"]).all()
+
+    def test_ci_width_nonnegative(self, ci_df):
+        assert (ci_df["ci_width"] >= 0).all()

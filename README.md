@@ -39,12 +39,13 @@ Prints all results and saves four plots:
 ## Running the tests
 
 ```bash
-python -m pytest test_aim1.py -v   # 34 tests
-python -m pytest test_aim2.py -v   # 39 tests
-python -m pytest -v                # all 73 at once
+python -m pytest test_aim1.py -v   # 35 tests
+python -m pytest test_aim2.py -v   # 45 tests
+python -m pytest test_aim3.py -v   # 28 tests
+python -m pytest -v                # all 108 at once
 ```
 
-All 73 tests must pass before merging any new code.
+All 108 tests must pass before merging any new code.
 
 ---
 

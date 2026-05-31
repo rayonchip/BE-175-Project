@@ -1,0 +1,159 @@
+TDD Cycle Summary — Aim 3 PLSR Analysis
+========================================
+
+Overview
+--------
+Extended the CKD project with Partial Least Squares Regression (PLSR) analysis
+in aim3_plsr.py. The implementation was built in two stages (Parts 1-2 and Part 3)
+following strict TDD: tests written first, then source code. All 28 tests were
+red before any implementation existed and green immediately after.
+
+
+Functions Implemented
+---------------------
+  Part 1-2:
+    - fit_plsr(X, y, n_components)
+        Fits a PLSRegression model and returns it.
+    - select_n_components(X, y, max_components=10)
+        Chooses the optimal component count via 5-fold cross-validated R2.
+    - compute_vip(model, feature_names)
+        Computes VIP (Variable Importance of Projection) scores, returns a
+        DataFrame sorted descending by vip.
+
+  Part 3:
+    - bootstrap_vip(X, y, n_components, feature_names, n_bootstrap=200, random_state=42)
+        Resamples with replacement n_bootstrap times, refits PLSR each time,
+        recomputes VIP scores, and reports each feature's stability (fraction of
+        bootstrap iterations where VIP > 1) and mean VIP.
+    - condition_number(X)
+        Returns the condition number of the feature matrix as a float — a
+        direct measure of multicollinearity (high value = correlated features,
+        ill-conditioned system).
+    - bootstrap_coef_ci(X, y, n_components, feature_names, n_bootstrap=200, ci=95, random_state=42)
+        Bootstrap-samples the data, refits PLSR each time, and computes
+        percentile-based confidence intervals on each feature's regression
+        coefficient. Returns mean_coef, ci_lower, ci_upper, ci_width.
+
+
+Cycle Phases
+------------
+
+1. RED — Write Failing Tests (Parts 1-2: 13 tests, Part 3: 15 tests)
+   Tests were written before any implementation. Running the suite produced:
+     Part 1-2: ImportError — 'fit_plsr' not found
+     Part 3:   ImportError — 'bootstrap_vip' not found
+   Both confirmed the red phase with 0 tests collected and 1 import error.
+
+2. IMPLEMENT — Write Source to Satisfy the API
+   Part 1-2: fit_plsr, select_n_components, compute_vip implemented.
+   Part 3: bootstrap_vip, condition_number, bootstrap_coef_ci added.
+
+3. FIRST RUN (Part 3) — 12/28 Passing
+   15 new tests errored at fixture setup for TestBootstrapVip and
+   TestBootstrapCoefCi. Root cause: y_train is a pandas Series with a
+   non-contiguous original integer index (e.g., rows 0-399 after a train/test
+   split become index 0,2,5,...). The RNG generates position-based integers
+   (0 to n_samples-1) that don't match those labels. Pandas .loc then raises:
+     KeyError: '[270, 28, 2, ...] not in index'
+
+4. FIX — np.asarray before indexing
+   Both bootstrap functions now call np.asarray(X) and np.asarray(y) at entry,
+   converting any pandas object to a plain numpy array before integer indexing.
+   This makes the functions robust to any pandas index type.
+
+5. GREEN — 28/28 Passing, Zero Warnings
+   Runtime: 2.60 seconds.
+
+
+Test Classes and Rationale
+--------------------------
+TestFitPlsr (4 tests)
+  Checks return type (PLSRegression), fitted state (x_scores_ present),
+  that the requested component count is respected, and that score rows equal
+  the training sample count.
+
+TestSelectNComponents (3 tests)
+  Checks return type (int), that the result is within [1, max_components],
+  and that max_components is never exceeded for three different bounds.
+
+TestComputeVip (6 tests)
+  Checks DataFrame return, exact column set, row count equals feature count,
+  all scores non-negative, sorted descending, and that at least one CKD
+  biomarker exceeds VIP > 1.
+
+TestBootstrapVip (6 tests)
+  Checks DataFrame return, exact column set {feature, stability, mean_vip},
+  row count, stability values in [0, 1], mean_vip non-negative, and that
+  at least one of hemo or sg appears in the top 5 by stability — verifying
+  that the dominant CKD biomarkers are reliably identified across resamples.
+
+TestConditionNumber (3 tests)
+  Checks float return, value >= 1 (lower bound by definition), and value > 10
+  on the real CKD dataset — confirming clinical features are multicollinear,
+  which motivates PLSR over ordinary regression.
+
+TestBootstrapCoefCi (6 tests)
+  Checks DataFrame return, exact column set {feature, mean_coef, ci_lower,
+  ci_upper, ci_width}, row count, all features present, ci_lower <= ci_upper,
+  and ci_width >= 0.
+
+
+Final Results (from main())
+----------------------------
+Optimal PLSR components: 3
+
+Top 5 VIP scores (point estimate):
+  Rank  Feature  VIP
+  1     hemo     1.722
+  2     sg       1.696
+  3     pcv      1.485
+  4     rbcc     1.342
+  5     htn      1.294
+
+Condition number of scaled feature matrix: 11.5
+  Interpretation: condition number > 10 indicates moderate multicollinearity
+  (hemo, pcv, rbcc are all blood/oxygen markers and are correlated). This is
+  exactly the regime where PLSR is preferred over OLS regression, because PLSR
+  finds latent components that maximally explain Y rather than inverting a
+  near-singular X'X matrix.
+
+Bootstrap VIP stability (200 resamples, n_bootstrap=200):
+  7 features are perfectly stable (stability = 1.0): sg, al, hemo, pcv,
+  rbcc, htn, dm. All have VIP > 1 in every bootstrap resample. bu is nearly
+  stable (0.965). Features below stability 0.5 (e.g., sod, pot) are
+  borderline and should not be reported as significant.
+
+Bootstrap 95% CI on PLSR coefficients (top 10 by |mean_coef|):
+  Feature  Mean coef  95% CI
+  sg       -0.139     [-0.169, -0.112]   (negative: high sg → low CKD probability)
+  hemo     -0.126     [-0.155, -0.099]   (negative: higher hemoglobin → less CKD)
+  pcv      -0.064     [-0.088, -0.042]
+  dm        0.058     [ 0.034,  0.085]   (positive: diabetes mellitus → more CKD)
+  htn       0.057     [ 0.032,  0.088]   (positive: hypertension → more CKD)
+  Narrow, non-overlapping-zero CIs confirm these coefficients are stable
+  across bootstrap resamples. pot CI crosses zero ([-0.069, 0.013]),
+  indicating an unreliable predictor.
+
+
+Key Design Decisions
+--------------------
+- np.asarray conversion: both bootstrap functions convert inputs at entry so
+  that pandas Series/DataFrame with non-contiguous indices work correctly with
+  position-based bootstrap sampling.
+- Percentile bootstrap CI: simpler and more robust than BCa for this dataset
+  size; gives correct intervals without requiring jackknife estimates.
+- condition_number uses the full scaled feature matrix (not training split)
+  because multicollinearity is a property of the feature space, not the split.
+- VIP formula uses normalized weights (W_norm): column-normalizing the weight
+  matrix ensures each component contributes proportionally to its explained
+  variance in Y, not its raw magnitude.
+- bootstrap_vip reindexes the per-iteration VIP Series by feature name before
+  building the DataFrame, so sort order variation between iterations does not
+  corrupt the column alignment.
+
+
+Files
+-----
+  aim3_plsr.py   — 6 public functions + main()
+  test_aim3.py   — 28 pytest tests across 6 test classes
+  TDDaim3.txt    — this file
