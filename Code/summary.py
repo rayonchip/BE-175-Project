@@ -1,3 +1,4 @@
+import pathlib
 """
 summary.py — cross-aim synthesis answering the three project questions.
 Run: python summary.py
@@ -20,7 +21,7 @@ from aim3_plsr import (
     bootstrap_vip, plsr_sensitivity,
 )
 
-DATA_PATH = "Training Data/ckd_cleaned.csv"
+DATA_PATH = pathlib.Path(__file__).parent.parent / "Data" / "ckd_cleaned.csv"
 
 
 def build_consensus(lr_imp, dt_imp, vip_df, bvip_df, sens_df):

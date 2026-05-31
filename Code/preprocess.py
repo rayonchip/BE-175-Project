@@ -30,9 +30,9 @@ import pandas as pd
 # ---------------------------------------------------------------------------
 # Paths
 # ---------------------------------------------------------------------------
-ROOT = pathlib.Path(__file__).resolve().parent                 # BE-175-Project/
-RAW_DIR = ROOT / "Training Data"
-PROCESSED_DIR = ROOT / "Training Data"
+ROOT = pathlib.Path(__file__).resolve().parent.parent          # BE-175-Project/
+RAW_DIR = ROOT / "Data"
+PROCESSED_DIR = ROOT / "Data"
 
 ARFF_FILE = RAW_DIR / "chronic_kidney_disease.arff"
 CLEANED_CSV = PROCESSED_DIR / "ckd_cleaned.csv"

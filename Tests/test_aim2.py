@@ -1,3 +1,4 @@
+import pathlib
 """
 TDD tests for aim2_analysis.py.
 Written before the implementation — tests define the expected API.
@@ -24,7 +25,7 @@ from aim2_analysis import (
     plot_regularization_path,
 )
 
-DATA_PATH = "Training Data/ckd_cleaned.csv"
+DATA_PATH = pathlib.Path(__file__).parent.parent / "Data" / "ckd_cleaned.csv"
 CV_METRIC_KEYS = {
     "Model",
     "mean_accuracy", "std_accuracy",

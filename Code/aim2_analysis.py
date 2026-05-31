@@ -1,3 +1,4 @@
+import pathlib
 import pandas as pd
 import numpy as np
 from sklearn.model_selection import cross_validate, GridSearchCV, StratifiedKFold
@@ -145,7 +146,7 @@ def plot_regularization_path(X_train_scaled, y_train, X_test_scaled, y_test,
 
 
 def main():
-    DATA_PATH = "Training Data/ckd_cleaned.csv"
+    DATA_PATH = pathlib.Path(__file__).parent.parent / "Data" / "ckd_cleaned.csv"
     X, y = load_data(DATA_PATH)
     X_train, X_test, y_train, y_test = split_data(X, y)
     X_train_scaled, X_test_scaled, scaler = scale_features(X_train, X_test)

@@ -1,3 +1,4 @@
+import pathlib
 """
 TDD tests for aim1_classification.py.
 Written before refactoring the source — tests define the expected API.
@@ -22,7 +23,7 @@ from aim1_classification import (
     plot_confusion_matrices,
 )
 
-DATA_PATH = "Training Data/ckd_cleaned.csv"
+DATA_PATH = pathlib.Path(__file__).parent.parent / "Data" / "ckd_cleaned.csv"
 EXPECTED_FEATURES = [
     "age", "bp", "sg", "al", "su", "rbc", "pc", "pcc", "ba",
     "bgr", "bu", "sc", "sod", "pot", "hemo", "pcv", "wbcc", "rbcc",

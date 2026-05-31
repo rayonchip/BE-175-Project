@@ -1,3 +1,4 @@
+import pathlib
 import pandas as pd
 import numpy as np
 from sklearn.model_selection import train_test_split
@@ -84,7 +85,7 @@ def plot_confusion_matrices(models, y_test, save_path="confusion_matrices.png"):
 
 
 def main():
-    DATA_PATH = "Training Data/ckd_cleaned.csv"
+    DATA_PATH = pathlib.Path(__file__).parent.parent / "Data" / "ckd_cleaned.csv"
 
     X, y = load_data(DATA_PATH)
     X_train, X_test, y_train, y_test = split_data(X, y)

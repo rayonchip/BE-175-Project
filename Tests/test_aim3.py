@@ -1,3 +1,4 @@
+import pathlib
 """
 TDD tests for aim3_plsr.py.
 Run with: python -m pytest test_aim3.py -v
@@ -16,7 +17,7 @@ from aim3_plsr import (
     plot_vip, plot_bootstrap_stability, plot_plsr_sensitivity,
 )
 
-DATA_PATH = "Training Data/ckd_cleaned.csv"
+DATA_PATH = pathlib.Path(__file__).parent.parent / "Data" / "ckd_cleaned.csv"
 
 
 # ---------------------------------------------------------------------------
